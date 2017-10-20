@@ -20,7 +20,6 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <map>
-//自定义状况记录器  继承
 class MyFileLogger: public libfreenect2::Logger
 {
 private:
@@ -46,23 +45,20 @@ public:
 int main(int argc, char *argv[])
 {
   std::string program_path(argv[0]);
-  //从最后开始，向前查找"main" 返回下标
   size_t executable_name_idx = program_path.rfind("main");
 
   //std::cout<<"program_path="<<program_path<<std::endl;
   //std::cout<<"executable_name_idx="<<executable_name_idx<<std::endl;
 
   std::string binpath = "/";
-  //找到了
   if(executable_name_idx != std::string::npos)
   {
-      //复制 从开始到executable_name_idx
      binpath = program_path.substr(0, executable_name_idx);
      //std::cout<<"binpath="<<binpath<<std::endl;//  ./
   }
 
   libfreenect2::setGlobalLogger(libfreenect2::createConsoleLogger(libfreenect2::Logger::Debug));
-  MyFileLogger *filelogger = new MyFileLogger(getenv("LOGFILE"));//取得环境变量内容  指针
+  MyFileLogger *filelogger = new MyFileLogger(getenv("LOGFILE"));
   if (filelogger->good())
      libfreenect2::setGlobalLogger(filelogger);
   else
@@ -75,14 +71,8 @@ int main(int argc, char *argv[])
 
   std::string serial = "";
 
-  //是否显示 图像框，rgb图，depth图  后期可删除 换成opencv
-  /*
-  bool viewer_enabled = true;
-  bool enable_rgb = true;
-  bool enable_depth = true;*/
   size_t framemax = -1;
 
-  //枚举所有的kinect设备
   if(freenect2.enumerateDevices() == 0)
    {
      std::cout << "no device connected!" << std::endl;
@@ -92,10 +82,8 @@ int main(int argc, char *argv[])
    {
      serial = freenect2.getDefaultDeviceSerialNumber();
    }
-  //打开
   if(pipeline)
    {
-  //打开kinect
      dev = freenect2.openDevice(serial, pipeline);
    }
    else
@@ -109,7 +97,6 @@ int main(int argc, char *argv[])
    }
   int types = 0;
   types |= libfreenect2::Frame::Color| libfreenect2::Frame::Ir | libfreenect2::Frame::Depth;
-   //等待所有指定类型的帧被接收一次
   libfreenect2::SyncMultiFrameListener listener(types);
   libfreenect2::FrameMap frames;
   dev->setColorFrameListener(&listener);
@@ -120,15 +107,14 @@ int main(int argc, char *argv[])
   std::cout << "device firmware: " << dev->getFirmwareVersion() << std::endl;
 
   //start
-  //可用setIrCameraParams（）替换成自己的矫正参数   这里获取的是默认的
   libfreenect2::Registration* registration = new libfreenect2::Registration(dev->getIrCameraParams(), dev->getColorCameraParams());
   libfreenect2::Frame undistorted(512, 424, 4), registered(512, 424, 4), depth2rgb(1920, 1080 + 2, 4);
   size_t framecount = 0;
    cv::Mat rgbmat, depthmat, depthmatUndistorted, irmat, rgbd, rgbd2;
-  // [loop start]  循环接受图像
+  // [loop start]  
   while(  (framemax == (size_t)-1 || framecount < framemax))
   {
-      if (!listener.waitForNewFrame(frames, 10*1000)) // 10 sconds  这里将阻塞，直到所有帧都被接收，然后可以Frame根据类型提取。
+      if (!listener.waitForNewFrame(frames, 10*1000)) // 10 sconds  
       {
         std::cout << "timeout!" << std::endl;
         return -1;
@@ -164,7 +150,6 @@ int main(int argc, char *argv[])
   /// [loop end]
       listener.release(frames);
 
-      //cv::imwrite("rgb.jpg",rgb);
   }
   dev->stop();
   dev->close();
